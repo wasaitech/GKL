@@ -91,7 +91,7 @@ public class PairHmmUnitTest {
     @Test(enabled = true)
     public void fpgaTest() {
         final boolean shaccIsLoaded = NativeLibraryLoader.load(null, "gkl_pairhmm_shacc");
-        Assert.assertFalse(shaccIsLoaded);
+        Assert.assertTrue(shaccIsLoaded);
 
         final boolean isloaded = new IntelPairHmmFpga().load(null);
         Assert.assertTrue(isloaded);
