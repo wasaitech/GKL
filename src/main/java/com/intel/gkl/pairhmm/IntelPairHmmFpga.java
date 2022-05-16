@@ -30,11 +30,12 @@ import org.apache.commons.logging.Log;
  * Provides a native PairHMM implementation accelerated using Intel FPGAs
  */
 public final class IntelPairHmmFpga extends IntelPairHmm {
-    private static final String NATIVE_LIBRARY_NAME = "gkl_pairhmm";
+    private static final String NATIVE_LIBRARY_NAME = "gkl_pairhmm_fpga";
     private final static Log logger = LogFactory.getLog(IntelPairHmmFpga.class);
 
     public IntelPairHmmFpga() {
-   	    	logger.warn("PairHMM does not support FPGA Implementation. Please use AVX PairHMM");
-
+        setNativeLibraryName(NATIVE_LIBRARY_NAME);
+        useFpga = true;
+   	    logger.warn("PairHMM support for Intel PAC D5005.");
     }
 }
