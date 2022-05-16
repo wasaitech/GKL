@@ -29,6 +29,7 @@
 #include <exception>
 #include <string>
 #include "pairhmm_common.h"
+#include "shacc_pairhmm.h"
 
 class JavaException : std::exception {
   public:
@@ -65,6 +66,9 @@ class JavaData {
   std::vector<testcase> getData(jobjectArray& readDataArray, jobjectArray& haplotypeDataArray) {
     int numReads = m_env->GetArrayLength(readDataArray);
     int numHaplotypes = m_env->GetArrayLength(haplotypeDataArray);
+
+    m_batch.num_reads = numReads;
+    m_batch.num_haps = numHaplotypes;
 
     std::vector<char*> haplotypes;
     std::vector<int> haplotypeLengths;
@@ -114,6 +118,41 @@ class JavaData {
     return getDoubleArray(array);
   }
 
+  // create shacc_pairhmm::batch from array of testcases
+  shacc_pairhmm::Batch getBatch() {
+    int num_testcases = m_batch.num_reads * m_batch.num_haps;
+
+    // get reads
+    for (int i = 0; i < num_testcases; i += m_batch.num_haps) {
+      shacc_pairhmm::Read read;
+      read.bases = m_testcases[i].rs;
+      read.length = m_testcases[i].rslen;
+      read.i = m_testcases[i].i;
+      read.d = m_testcases[i].d;
+      read.c = m_testcases[i].c;
+      read.q = m_testcases[i].q;
+      m_reads.push_back(read);
+    }
+    m_batch.reads = m_reads.data();
+
+    // get haplotypes
+    for (int i = 0; i < m_batch.num_haps; i++) {
+      shacc_pairhmm::Haplotype hap;
+      DBG("hap #%d len = %d", i, m_testcases[i].haplen);
+      hap.bases = m_testcases[i].hap;
+      hap.length = m_testcases[i].haplen;
+      m_haps.push_back(hap);
+    }
+    m_batch.haps = m_haps.data();
+
+    // allocate results
+    m_batch.results = (float*)malloc(sizeof(float) * num_testcases);
+
+    m_batch.num_cells = m_total_cells;
+
+    return m_batch;
+  }
+
  private:
   void releaseData() {
     for (int i = 0; i < m_byteArrays.size(); i++) {
@@ -153,6 +192,9 @@ class JavaData {
     return (double*)primArray;
   }
 
+  shacc_pairhmm::Batch m_batch;
+  std::vector<shacc_pairhmm::Read> m_reads;
+  std::vector<shacc_pairhmm::Haplotype> m_haps;
   std::vector<testcase> m_testcases;
   std::vector<std::pair<jbyteArray, jbyte*> > m_byteArrays;
   std::vector<std::pair<jdoubleArray, jdouble*> > m_doubleArrays;
