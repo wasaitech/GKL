@@ -44,6 +44,7 @@ public class IntelPairHmm implements PairHMMNativeBinding {
     private String nativeLibraryName = "gkl_pairhmm";
     private IntelGKLUtils gklUtils = new IntelGKLUtils();
     boolean useOmp = false;
+    boolean useFpga = false;
 
     void setNativeLibraryName(String nativeLibraryName) {
         this.nativeLibraryName = nativeLibraryName;
@@ -89,15 +90,23 @@ public class IntelPairHmm implements PairHMMNativeBinding {
             args.maxNumberOfThreads = 1;
         }
 
-        if(gklUtils.isAvx512Supported()) {
-            logger.info("Using CPU-supported AVX-512 instructions");
+        if(useFpga) {
+            logger.info("Using Intel FPGA PairHMM");
+            if (args.useDoublePrecision) {
+                logger.warn("FPGA PairHMM does not support double precision floating-point. Try using AVX PairHMM");
+            }
+        }
+        else {
+            if(gklUtils.isAvx512Supported()) {
+                logger.info("Using CPU-supported AVX-512 instructions");
+            }
         }
 
         if(!gklUtils.getFlushToZero()) {
             logger.info("Flush-to-zero (FTZ) is enabled when running PairHMM");
         }
 
-        initNative(ReadDataHolder.class, HaplotypeDataHolder.class, args.useDoublePrecision, args.maxNumberOfThreads);
+        initNative(ReadDataHolder.class, HaplotypeDataHolder.class, args.useDoublePrecision, args.maxNumberOfThreads, useFpga);
 
         // log information about threads
         int reqThreads = args.maxNumberOfThreads;
@@ -157,7 +166,8 @@ public class IntelPairHmm implements PairHMMNativeBinding {
     private native static void initNative(Class<?> readDataHolderClass,
                                           Class<?> haplotypeDataHolderClass,
                                           boolean doublePrecision,
-                                          int maxThreads);
+                                          int maxThreads,
+                                          int useFpga);
 
     private native void computeLikelihoodsNative(Object[] readDataArray,
                                                  Object[] haplotypeDataArray,
